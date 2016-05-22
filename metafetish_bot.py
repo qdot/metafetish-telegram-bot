@@ -23,13 +23,8 @@ def main():
 
     start_handler = CommandHandler('start', start)
     dispatcher.add_handler(start_handler)
-    try:
-        updater.start_polling()
-        while True:
-            time.sleep(1000)
-    except KeyboardInterrupt:
-        pass
-    updater.stop()
+    updater.start_polling()
+    updater.idle()
     print("Shutting down bot")
 
 
