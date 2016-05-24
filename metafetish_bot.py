@@ -16,18 +16,33 @@ class DefinitionManager(object):
         dispatcher.add_handler(CommandHandler('def_add', self.def_add))
         dispatcher.add_handler(CommandHandler('def_rm', self.def_rm))
 
+    def _contains_special_chars(self, defstr):
+        """Returns True if string contains *[]()_`"""
+        # Should probably do this as a regexp but eh.
+        if any(c in defstr for c in ['(', ')', '*', '[', ']', '_', '`']):
+            return True
+        return False
+
+    def send_char_error(self, bot, update):
+        bot.sendMessage(update.message.chat_id,
+                        text='The following characters are not allowed in definition queries: []()*_`')
+
     def def_show(self, bot, update):
         def_name = update.message.text.partition(" ")[2].strip()
+        if self._contains_special_chars(def_name):
+            self.send_char_error(bot, update)
+            return
         if self.db.get(def_name) is None:
             bot.sendMessage(update.message.chat_id,
                             text='No definition available for %s' %
-                            (def_name))
+                            (def_name),
+                            parse_mode="Markdown")
             return
         def_str = "Definition for _%s_:\n" % (def_name)
         i = 1
         def_text = self.db.lgetall(def_name)
-        for s in def_text:
-            def_str += "*%d.* %s\n" % (i, s)
+        for d in def_text:
+            def_str += "*%d.* %s\n" % (i, d["desc"])
             i += 1
         bot.sendMessage(update.message.chat_id,
                         text=def_str,
@@ -37,27 +52,36 @@ class DefinitionManager(object):
         command = update.message.text.partition(" ")[2]
         (def_name, def_part, def_add) = command.partition(" ")
         def_name = def_name.strip()
+        def_add = def_add.strip()
+        if (self._contains_special_chars(def_name) or self._contains_special_chars(def_add)):
+            self.send_char_error(bot, update)
+            return
         if self.db.get(def_name) is None:
             bot.sendMessage(update.message.chat_id,
-                            text='Adding definition for _%s_.' %
-                            (def_name),
+                            text='Adding definition:\n_%s_\n for term _%s_.' %
+                            (def_add,def_name),
                             parse_mode="Markdown")
             self.db.lcreate(def_name)
         else:
             bot.sendMessage(update.message.chat_id,
-                            text='Definition for _%s_ already exists, extending.' %
-                            (def_name),
+                            text='Definition for _%s_ already exists, extending with definition _%s_.' %
+                            (def_name, def_add),
                             parse_mode="Markdown")
-        self.db.ladd(def_name, def_add.strip())
+        d = {"user": update.message.from_user.id,
+             "desc": def_add.strip()}
+        self.db.ladd(def_name, d)
 
     def def_rm(self, bot, update):
         command = update.message.text.partition(" ")[2]
         (def_name, def_part, def_rm) = command.partition(" ")
         def_name = def_name.strip()
+        if self._contains_special_chars(def_name):
+            self.send_char_error(bot, update)
+            return
         if self.db.get(def_name) is None:
             bot.sendMessage(update.message.chat_id,
                             text='No definition available for _%s_' %
-                            (def_name, def_name),
+                            (def_name),
                             parse_mode="Markdown")
             return
         try:
