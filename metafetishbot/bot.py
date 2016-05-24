@@ -34,11 +34,12 @@ class MetafetishTelegramBot(object):
         self.updater = Updater(token=tg_token)
         self.dispatcher = self.updater.dispatcher
         self.users = UserManager(self.dispatcher, args.dbdir)
-        self.definer = DefinitionManager(self.dispatcher, args.dbdir)
+        self.definitions = DefinitionManager(self.dispatcher, args.dbdir)
 
     def start_loop(self):
         self.updater.start_polling()
         self.updater.idle()
 
     def shutdown(self):
-        self.definer.shutdown()
+        self.users.shutdown()
+        self.definitions.shutdown()

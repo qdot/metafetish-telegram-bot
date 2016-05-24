@@ -57,11 +57,13 @@ class UserManager(object):
 
     @require_register
     def set_show_profile(self, bot, update):
-        pass
+        user_id = update.message.from_user.id
+        self.db.dadd(user_id, ("show_profile", True))
 
     @require_register
     def set_hide_profile(self, bot, update):
-        pass
+        user_id = update.message.from_user.id
+        self.db.dadd(user_id, ("show_profile", False))
 
     @require_register
     def get_user_flag_group(self, user_id, flag_group):
