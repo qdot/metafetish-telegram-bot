@@ -5,27 +5,31 @@ from .pickledb import pickledb
 
 class DefinitionManager(object):
     def __init__(self, dispatcher, dbdir):
-        self.db = pickledb(os.path.join(dbdir, "defines.db"), True)
+        defsdir = os.path.join(dbdir, "definitions")
+        if not os.path.isdir(defsdir):
+            os.makedirs(defsdir)
+        self.db = pickledb(os.path.join(defsdir, "definitions.db"), True)
 
-        dispatcher.add_handler(CommandHandler('def', self.def_show))
-        dispatcher.add_handler(CommandHandler('def_show', self.def_show))
-        dispatcher.add_handler(CommandHandler('def_add', self.def_add))
-        dispatcher.add_handler(CommandHandler('def_rm', self.def_rm))
+        dispatcher.add_handler(CommandHandler('def', self.show))
+        dispatcher.add_handler(CommandHandler('def_show', self.show))
+        dispatcher.add_handler(CommandHandler('def_add', self.add))
+        dispatcher.add_handler(CommandHandler('def_rm', self.rm))
 
     def _contains_special_chars(self, defstr):
         """Returns True if string contains *[]()_`"""
-        # Should probably do this as a regexp but eh.
-        if any(c in defstr for c in ['(', ')', '*', '[', ']', '_', '`']):
-            return True
+        for s in defstr:
+            # Should probably do this as a regexp but eh.
+            if any(c in s for c in ['(', ')', '*', '[', ']', '_', '`']):
+                return True
         return False
 
     def send_char_error(self, bot, update):
         bot.sendMessage(update.message.chat_id,
                         text='The following characters are not allowed in definition queries: []()*_`')
 
-    def def_show(self, bot, update):
-        def_name = update.message.text.partition(" ")[2].strip()
-        if self._contains_special_chars(def_name):
+    def show(self, bot, update):
+        def_name = update.message.text.partition(" ")[2].strip().lower()
+        if self._contains_special_chars([def_name]):
             self.send_char_error(bot, update)
             return
         if self.db.get(def_name) is None:
@@ -44,12 +48,12 @@ class DefinitionManager(object):
                         text=def_str,
                         parse_mode="Markdown")
 
-    def def_add(self, bot, update):
+    def add(self, bot, update):
         command = update.message.text.partition(" ")[2]
         (def_name, def_part, def_add) = command.partition(" ")
-        def_name = def_name.strip()
+        def_name = def_name.strip().lower()
         def_add = def_add.strip()
-        if (self._contains_special_chars(def_name) or self._contains_special_chars(def_add)):
+        if self._contains_special_chars([def_name, def_add]):
             self.send_char_error(bot, update)
             return
         if self.db.get(def_name) is None:
@@ -67,11 +71,11 @@ class DefinitionManager(object):
              "desc": def_add.strip()}
         self.db.ladd(def_name, d)
 
-    def def_rm(self, bot, update):
+    def rm(self, bot, update):
         command = update.message.text.partition(" ")[2]
         (def_name, def_part, def_rm) = command.partition(" ")
-        def_name = def_name.strip()
-        if self._contains_special_chars(def_name):
+        def_name = def_name.strip().lower()
+        if self._contains_special_chars([def_name, def_rm]):
             self.send_char_error(bot, update)
             return
         if self.db.get(def_name) is None:
