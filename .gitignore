@@ -63,3 +63,7 @@ target/
 
 # Don't check in our token
 token.txt
+
+# Don't check in pickledbs
+dbs
+*.db

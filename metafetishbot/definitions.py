@@ -1,10 +1,11 @@
+import os
 from telegram.ext import CommandHandler
 from .pickledb import pickledb
 
 
 class DefinitionManager(object):
-    def __init__(self, dispatcher):
-        self.db = pickledb("defines.db", True)
+    def __init__(self, dispatcher, dbdir):
+        self.db = pickledb(os.path.join(dbdir, "defines.db"), True)
 
         dispatcher.add_handler(CommandHandler('def', self.def_show))
         dispatcher.add_handler(CommandHandler('def_show', self.def_show))

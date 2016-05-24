@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import logging
 from metafetishbot import MetafetishTelegramBot
 
@@ -6,8 +8,11 @@ logging.basicConfig(level=logging.DEBUG,
 
 
 def main():
+    try:
+        bot = MetafetishTelegramBot()
+    except RuntimeError:
+        return 0
     print("Starting up bot")
-    bot = MetafetishTelegramBot()
     bot.start_loop()
     bot.shutdown()
     print("Shutting down bot")
