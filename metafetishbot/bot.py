@@ -1,5 +1,6 @@
 from telegram.ext import Updater
 from .definitions import DefinitionManager
+from .users import UserManager
 import argparse
 import os
 
@@ -32,6 +33,7 @@ class MetafetishTelegramBot(object):
 
         self.updater = Updater(token=tg_token)
         self.dispatcher = self.updater.dispatcher
+        self.users = UserManager(self.dispatcher, args.dbdir)
         self.definer = DefinitionManager(self.dispatcher, args.dbdir)
 
     def start_loop(self):
