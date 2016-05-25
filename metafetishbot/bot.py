@@ -2,6 +2,7 @@ from telegram.ext import Updater
 from .permissioncommandhandler import PermissionCommandHandler
 from .definitions import DefinitionManager
 from .users import UserManager
+from .groups import GroupManager
 import argparse
 import os
 import logging
@@ -38,26 +39,46 @@ class MetafetishTelegramBot(object):
         self.dispatcher = self.updater.dispatcher
         self.users = UserManager(args.dbdir)
         self.definitions = DefinitionManager(args.dbdir)
+        self.group = GroupManager(args.dbdir)
 
+        self.dispatcher.add_handler(PermissionCommandHandler('register',
+                                                             [self.require_group],
+                                                             self.users.register))
         self.dispatcher.add_handler(PermissionCommandHandler('def',
-                                                             [self.require_register],
+                                                             [self.require_register,
+                                                              self.require_group],
                                                              self.definitions.show))
         self.dispatcher.add_handler(PermissionCommandHandler('def_show',
-                                                             [self.require_register],
+                                                             [self.require_register,
+                                                              self.require_group],
                                                              self.definitions.show))
         self.dispatcher.add_handler(PermissionCommandHandler('def_add',
-                                                             [self.require_register],
+                                                             [self.require_register,
+                                                              self.require_group],
                                                              self.definitions.add))
         self.dispatcher.add_handler(PermissionCommandHandler('def_rm',
-                                                             [self.require_register],
+                                                             [self.require_register,
+                                                              self.require_group],
                                                              self.definitions.rm))
 
+        self.dispatcher.add_error_handler(self.handle_error)
+
+    def handle_error(self, bot, update, error):
+        self.logger.warn("Exception thrown! %s", self.error)
+
     def require_register(self, bot, update):
-        self.logger.warn("Checking registration!")
         user_id = update.message.from_user.id
         if not self.users.is_valid_user(user_id):
             bot.sendMessage(update.message.chat_id,
                             text="Please register with the bot (using the /register command) before using this command!")
+            return False
+        return True
+
+    def require_group(self, bot, update):
+        user_id = update.message.from_user.id
+        if not self.group.user_in_group(bot, user_id):
+            bot.sendMessage(update.message.chat_id,
+                            text="Please join the 'metafetish' group to use this bot! http://telegram.me/metafetish")
             return False
         return True
 
