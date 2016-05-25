@@ -11,24 +11,14 @@ class UserFlagGroupNotFoundException(Exception):
     pass
 
 
-def require_register(func):
-    def func_wrapper(self, bot, update):
-        user_id = update.message.from_user.id
-        if not self.is_valid_user(user_id):
-            bot.sendMessage(update.message.chat_id,
-                            text="Please register with the bot (using the /register command) before using this command!")
-            return
-        func(self, bot, update)
-    return func_wrapper
-
-
 class UserManager(object):
-    def __init__(self, dispatcher, dbdir):
+    def __init__(self, dbdir):
         userdir = os.path.join(dbdir, "users")
         if not os.path.isdir(userdir):
             os.makedirs(userdir)
         self.db = pickledb(os.path.join(userdir, "users.db"), True)
 
+    def register_with_dispatcher(self, dispatcher):
         dispatcher.add_handler(CommandHandler('register', self.register))
         dispatcher.add_handler(CommandHandler('profile_hide',
                                               self.set_hide_profile))
@@ -55,32 +45,25 @@ class UserManager(object):
         bot.sendMessage(update.message.chat_id,
                         text="You are now registered!")
 
-    @require_register
     def set_show_profile(self, bot, update):
         user_id = update.message.from_user.id
         self.db.dadd(user_id, ("show_profile", True))
 
-    @require_register
     def set_hide_profile(self, bot, update):
         user_id = update.message.from_user.id
         self.db.dadd(user_id, ("show_profile", False))
 
-    @require_register
     def get_user_flag_group(self, user_id, flag_group):
         pass
 
-    @require_register
     def set_user_flag_group(self, user_id, flag_group, flag_values):
         pass
 
-    @require_register
     def get_user_field(self, user_id, field):
         pass
 
-    @require_register
     def set_user_field(self, user_id, field, field_value):
         pass
 
-    @require_register
     def shutdown(self):
         self.db.dump()

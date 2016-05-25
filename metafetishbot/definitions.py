@@ -4,12 +4,13 @@ from .pickledb import pickledb
 
 
 class DefinitionManager(object):
-    def __init__(self, dispatcher, dbdir):
+    def __init__(self, dbdir):
         defsdir = os.path.join(dbdir, "definitions")
         if not os.path.isdir(defsdir):
             os.makedirs(defsdir)
         self.db = pickledb(os.path.join(defsdir, "definitions.db"), True)
 
+    def register_with_dispatcher(self, dispatcher):
         dispatcher.add_handler(CommandHandler('def', self.show))
         dispatcher.add_handler(CommandHandler('def_show', self.show))
         dispatcher.add_handler(CommandHandler('def_add', self.add))
