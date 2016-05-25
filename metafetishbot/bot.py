@@ -41,27 +41,54 @@ class MetafetishTelegramBot(object):
         self.definitions = DefinitionManager(args.dbdir)
         self.group = GroupManager(args.dbdir)
 
+        self.dispatcher.add_handler(CommandHandler('start', self.handle_start))
+        self.dispatcher.add_handler(CommandHandler('help', self.handle_help))
+        self.dispatcher.add_handler(CommandHandler('settings', self.handle_settings))
         self.dispatcher.add_handler(PermissionCommandHandler('register',
                                                              [self.require_group],
                                                              self.users.register))
         self.dispatcher.add_handler(PermissionCommandHandler('def',
-                                                             [self.require_register,
-                                                              self.require_group],
+                                                             [self.require_group,
+                                                              self.require_register],
                                                              self.definitions.show))
         self.dispatcher.add_handler(PermissionCommandHandler('def_show',
-                                                             [self.require_register,
-                                                              self.require_group],
+                                                             [self.require_group,
+                                                              self.require_register],
                                                              self.definitions.show))
         self.dispatcher.add_handler(PermissionCommandHandler('def_add',
-                                                             [self.require_register,
-                                                              self.require_group],
+                                                             [self.require_group,
+                                                              self.require_register],
                                                              self.definitions.add))
         self.dispatcher.add_handler(PermissionCommandHandler('def_rm',
-                                                             [self.require_register,
-                                                              self.require_group],
+                                                             [self.require_group,
+                                                              self.require_register],
                                                              self.definitions.rm))
 
         self.dispatcher.add_error_handler(self.handle_error)
+
+    def handle_start(self, bot, update):
+        user_id = update.message.from_user.id
+        start_text="Hi! I'm @metafetish_bot, the bot for the Metafetish Telegram Channel.\n\n"
+        if not self.group.user_in_group(bot, user_id):
+            start_text += "Before we get started, you'll need to join the metafetish channel. You can do so by going to http://telegram.me/metafetish.\n"
+            start_text += "After you've done that, send me the /register command so I can register you to use bot features.\n"
+            start_text += "Once you've joined and registered, message me with /start again and we can continue!"
+            bot.sendMessage(update.message.chat_id,
+                            start_text)
+            return
+
+        if not self.users.is_valid_user(user_id):
+            start_text += "Looks like you're in the group, great! Now, send me the /register command so I can register you to use bot features.\n"
+            start_text += "Once you've joined and registered, message me with /start again and we can continue!"
+            bot.sendMessage(update.message.chat_id,
+                            start_text)
+            return
+
+    def handle_help(self, bot, update):
+        pass
+
+    def handle_settings(self, bot, update):
+        pass
 
     def handle_error(self, bot, update, error):
         self.logger.warn("Exception thrown! %s", self.error)
