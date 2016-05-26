@@ -56,14 +56,14 @@ class MetafetishTelegramBot(object):
         self.dispatcher.add_handler(PermissionCommandHandler('helpuser',
                                                              [self.require_group],
                                                              self.users.help))
-        self.dispatcher.add_handler(PermissionCommandHandler('addprofilefield',
-                                                             [self.require_group,
-                                                              self.require_register],
-                                                             self.users.add_field))
-        self.dispatcher.add_handler(PermissionCommandHandler('rmprofilefield',
-                                                             [self.require_group,
-                                                              self.require_register],
-                                                             self.users.remove_field))
+        # self.dispatcher.add_handler(PermissionCommandHandler('addprofilefield',
+        #                                                      [self.require_group,
+        #                                                       self.require_register],
+        #                                                      self.users.add_field))
+        # self.dispatcher.add_handler(PermissionCommandHandler('rmprofilefield',
+        #                                                      [self.require_group,
+        #                                                       self.require_register],
+        #                                                      self.users.remove_field))
 
         # Definition module commands
         self.dispatcher.add_handler(PermissionCommandHandler('def',
@@ -74,10 +74,6 @@ class MetafetishTelegramBot(object):
                                                              [self.require_group,
                                                               self.require_register],
                                                              self.definitions.help))
-        self.dispatcher.add_handler(PermissionCommandHandler('showdef',
-                                                             [self.require_group,
-                                                              self.require_register],
-                                                             self.definitions.show))
         self.dispatcher.add_handler(PermissionCommandHandler('adddef',
                                                              [self.require_group,
                                                               self.require_register,

@@ -77,6 +77,8 @@ class GroupManager(object):
                 is_in_group = True
         return is_in_group
 
+    def shutdown(self):
+        self.db.dump()
     # def update_group_list(self, bot, user_id):
     #     users = self.db.dkeys("users")
     #     for u in users:
