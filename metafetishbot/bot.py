@@ -52,60 +52,76 @@ class MetafetishTelegramBot(object):
         self.dispatcher.add_handler(CommandHandler('settings', self.handle_settings))
 
         # User module commands
-        self.dispatcher.add_handler(PermissionCommandHandler('register',
-                                                             [self.require_group],
+        self.dispatcher.add_handler(PermissionCommandHandler('userregister',
+                                                             [self.require_group,
+                                                              self.require_privmsg],
                                                              self.users.register))
-        self.dispatcher.add_handler(PermissionCommandHandler('helpuser',
-                                                             [self.require_group],
+        self.dispatcher.add_handler(PermissionCommandHandler('userhelp',
+                                                             [self.require_group,
+                                                              self.require_privmsg],
                                                              self.users.help))
-        # self.dispatcher.add_handler(PermissionCommandHandler('addprofilefield',
-        #                                                      [self.require_group,
-        #                                                       self.require_register],
-        #                                                      self.users.add_field))
-        # self.dispatcher.add_handler(PermissionCommandHandler('rmprofilefield',
-        #                                                      [self.require_group,
-        #                                                       self.require_register],
-        #                                                      self.users.remove_field))
+        self.dispatcher.add_handler(PermissionCommandHandler('useraddfield',
+                                                             [self.require_group,
+                                                              self.require_privmsg,
+                                                              self.require_register],
+                                                             self.users.add_field))
+        self.dispatcher.add_handler(PermissionCommandHandler('userrmfield',
+                                                             [self.require_group,
+                                                              self.require_privmsg,
+                                                              self.require_register],
+                                                             self.users.remove_field))
 
         # Definition module commands
         self.dispatcher.add_handler(PermissionCommandHandler('def',
                                                              [self.require_group,
                                                               self.require_register],
                                                              self.definitions.show))
-        self.dispatcher.add_handler(PermissionCommandHandler('helpdef',
+        self.dispatcher.add_handler(PermissionCommandHandler('deflist',
                                                              [self.require_group,
+                                                              self.require_register],
+                                                             self.definitions.list))
+        self.dispatcher.add_handler(PermissionCommandHandler('defhelp',
+                                                             [self.require_group,
+                                                              self.require_privmsg,
                                                               self.require_register],
                                                              self.definitions.help))
         self.dispatcher.add_handler(PermissionCommandHandler('defadd',
                                                              [self.require_group,
+                                                              self.require_privmsg,
                                                               self.require_register,
                                                               partial(self.require_flag, flag="def_edit")],
                                                              self.definitions.add))
         self.dispatcher.add_handler(PermissionCommandHandler('defrm',
                                                              [self.require_group,
+                                                              self.require_privmsg,
                                                               self.require_register,
                                                               partial(self.require_flag, flag="def_edit")],
                                                              self.definitions.rm))
 
         # Admin commands
-        self.dispatcher.add_handler(PermissionCommandHandler('adduserflag',
+        self.dispatcher.add_handler(PermissionCommandHandler('useraddflag',
                                                              [self.require_register,
+                                                              self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.users.add_flag))
-        self.dispatcher.add_handler(PermissionCommandHandler('rmuserflag',
+        self.dispatcher.add_handler(PermissionCommandHandler('userrmflag',
                                                              [self.require_register,
+                                                              self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.users.remove_flag))
-        self.dispatcher.add_handler(PermissionCommandHandler('addbotgroup',
+        self.dispatcher.add_handler(PermissionCommandHandler('groupadd',
                                                              [self.require_register,
+                                                              self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.groups.add_group))
-        self.dispatcher.add_handler(PermissionCommandHandler('rmbotgroup',
+        self.dispatcher.add_handler(PermissionCommandHandler('grouprm',
                                                              [self.require_register,
+                                                              self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.groups.rm_group))
         self.dispatcher.add_handler(PermissionCommandHandler('outputcommands',
                                                              [self.require_register,
+                                                              self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.output_commands))
         # On errors, just print to console and hope someone sees it
@@ -181,6 +197,13 @@ class MetafetishTelegramBot(object):
         if not self.users.has_flag(user_id, flag):
             bot.sendMessage(update.message.chat_id,
                             text="You do not have the required permissions to run this command. Please check the help for the module the command comes from.")
+            return False
+        return True
+
+    def require_privmsg(self, bot, update):
+        if update.message.chat_id < 0:
+            bot.sendMessage(update.message.chat_id,
+                            text="Please message that command to me. Only the following commands are allowed in public chats:\n- /def")
             return False
         return True
 

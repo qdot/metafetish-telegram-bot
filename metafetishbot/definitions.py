@@ -117,3 +117,10 @@ Note that definition names are case insensitive for search, but will display as 
                         text='Index %s for definition <i>%s</i> deleted.' %
                         (def_rm, def_name),
                         parse_mode="HTML")
+
+    def list(self, bot, update):
+        def_list = ", ".join([x for x in self.db.getall()])
+        bot.sendMessage(update.message.chat_id,
+                        text='Words/Phrases with definitions:\n%s' %
+                        (def_list),
+                        parse_mode="HTML")
