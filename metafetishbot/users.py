@@ -31,6 +31,9 @@ class UserManager(object):
         dispatcher.add_handler(CommandHandler('profile_show',
                                               self.set_show_profile))
 
+    def get_num_users(self):
+        return len(self.db.dgetall("users").keys())
+
     def is_valid_user(self, user_id):
         if str(user_id) in self.db.dkeys("users"):
             return True

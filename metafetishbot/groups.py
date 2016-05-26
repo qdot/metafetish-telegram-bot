@@ -28,9 +28,27 @@ class GroupManager(object):
         except:
             bot.sendMessage(update.message.chat_id,
                             text="Please make sure %s exists and that I'm an admin there!" % (group_name))
-        self.db.add("groups", (group_name, {}))
+        self.db.dadd("groups", (group_name, {}))
         bot.sendMessage(update.message.chat_id,
                         text='Group %s added!' % (group_name))
+
+    def rm_group(self, bot, update):
+        group_name = update.message.text.partition(" ")[2].strip().lower()
+        if group_name[0] is not "@":
+            bot.sendMessage(update.message.chat_id,
+                            text="Please specify group name with a leading @! (You used %s)" % (group_name))
+        try:
+            me = bot.getMe()
+            chat_status = bot.getChatMember(group_name, me.id)
+            if chat_status.status != "left":
+                bot.sendMessage(update.message.chat_id,
+                                text="Please make sure I'm no longer in %s!" % (group_name))
+                return
+        except:
+            pass
+        self.db.dpop("groups", group_name)
+        bot.sendMessage(update.message.chat_id,
+                        text='Group %s removed!' % (group_name))
 
     def user_in_groups(self, bot, user_id):
         if type(user_id) is not str:

@@ -42,7 +42,7 @@ class MetafetishTelegramBot(object):
         self.dispatcher = self.updater.dispatcher
         self.users = UserManager(args.dbdir)
         self.definitions = DefinitionManager(args.dbdir)
-        self.group = GroupManager(args.dbdir)
+        self.groups = GroupManager(args.dbdir)
 
         # Default commands
         self.dispatcher.add_handler(CommandHandler('start', self.handle_start))
@@ -91,22 +91,30 @@ class MetafetishTelegramBot(object):
 
         # Admin commands
         self.dispatcher.add_handler(PermissionCommandHandler('adduserflag',
-                                                             [self.require_group,
-                                                              self.require_register,
+                                                             [self.require_register,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.users.add_flag))
         self.dispatcher.add_handler(PermissionCommandHandler('rmuserflag',
-                                                             [self.require_group,
-                                                              self.require_register,
+                                                             [self.require_register,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.users.remove_flag))
+        self.dispatcher.add_handler(PermissionCommandHandler('addbotgroup',
+                                                             [self.require_register,
+                                                              partial(self.require_flag, flag="admin")],
+                                                             self.groups.add_group))
+        self.dispatcher.add_handler(PermissionCommandHandler('rmbotgroup',
+                                                             [self.require_register,
+                                                              partial(self.require_flag, flag="admin")],
+                                                             self.groups.rm_group))
+
+        # On errors, just print to console and hope someone sees it
         self.dispatcher.add_error_handler(self.handle_error)
 
     def handle_start(self, bot, update):
         user_id = update.message.from_user.id
         start_text = ["Hi! I'm @metafetish_bot, the bot for the Metafetish Telegram Channel.", ""]
         should_help = False
-        if not self.group.user_in_groups(bot, user_id):
+        if not self.groups.user_in_groups(bot, user_id):
             start_text += ["Before we get started, you'll need to join the metafetish channel. You can do so by going to http://telegram.me/metafetish.",
                            "After you've done that, send me the /register command so I can register you to use bot features.",
                            "Once you've joined and registered, message me with /start again and we can continue!"]
@@ -124,7 +132,7 @@ class MetafetishTelegramBot(object):
 
     def handle_help(self, bot, update):
         user_id = update.message.from_user.id
-        if not self.group.user_in_groups(bot, user_id) or not self.users.is_valid_user(user_id):
+        if not self.groups.user_in_groups(bot, user_id) or not self.users.is_valid_user(user_id):
             self.handle_start(bot, update)
             return
         help_text = ["I have the following modules available currently:",
@@ -153,8 +161,13 @@ class MetafetishTelegramBot(object):
         return True
 
     def require_group(self, bot, update):
+        # Special Case: If the bot has no users yet, we need to let the first
+        # user register so they can be an admin. After that, always require
+        # membership
+        if self.users.get_num_users() == 0:
+            return True
         user_id = update.message.from_user.id
-        if not self.group.user_in_groups(bot, user_id):
+        if not self.groups.user_in_groups(bot, user_id):
             bot.sendMessage(update.message.chat_id,
                             text="Please join the 'metafetish' group to use this bot! http://telegram.me/metafetish")
             return False
@@ -177,3 +190,4 @@ class MetafetishTelegramBot(object):
     def shutdown(self):
         self.users.shutdown()
         self.definitions.shutdown()
+        self.groups.shutdown()
