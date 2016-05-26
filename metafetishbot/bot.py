@@ -47,11 +47,21 @@ class MetafetishTelegramBot(object):
         self.modules = [self.users, self.definitions, self.groups]
 
         # Default commands
-        self.dispatcher.add_handler(CommandHandler('start', self.handle_start))
-        self.dispatcher.add_handler(CommandHandler('help', self.handle_help))
-        self.dispatcher.add_handler(CommandHandler('settings', self.handle_settings))
+        self.dispatcher.add_handler(PermissionCommandHandler('start',
+                                                             [self.require_privmsg],
+                                                             self.handle_start))
+        self.dispatcher.add_handler(PermissionCommandHandler('help',
+                                                             [self.require_privmsg],
+                                                             self.handle_help))
+        self.dispatcher.add_handler(PermissionCommandHandler('settings',
+                                                             [self.require_privmsg],
+                                                             self.handle_settings))
 
         # User module commands
+        self.dispatcher.add_handler(PermissionCommandHandler('register',
+                                                             [self.require_group,
+                                                              self.require_privmsg],
+                                                             self.users.register))
         self.dispatcher.add_handler(PermissionCommandHandler('userregister',
                                                              [self.require_group,
                                                               self.require_privmsg],
