@@ -64,7 +64,34 @@ class UserManager(object):
 
     def help(self, bot, update):
         bot.sendMessage(update.message.chat_id,
-                        text="This is not helpful.")
+                        text="""
+<b>User Module</b>
+
+The user module allows telegram users to register with the bot to use different functionality. Bot administrators can delegate privileges to registered users for different bot capabilities.
+
+Each registered user can also have profiles, which consists of a field name (with no whitespace) and description of that field. This allows users to share whatever information they might want about themselves. Profiles sharing is offby default, and can be turned on and off as needed.
+
+For instance, to add a twitter account to your profile, the command would be:
+
+/useraddfield TwitterAccount http://www.twitter.com/metafetish
+
+To remove that field:
+
+/userrmfield TwitterAccount
+
+Note that field names are case insensitive for search, but will display as entered.
+
+<b>Commands</b>
+
+/userhelp - Display this help message
+/userregister - Register an account with the bot
+/useraddfield - Parameters: [field name] [field desc]. Add or update a profile field.
+/userrmfield - Parameters: [field name]. Remove a profile field.
+/usershowprofile - Turn profile sharing on.
+/userhideprofile - Turn profile sharing off.
+/userprofile - Parameters: [telegram user name or display name]. Show the profile of another user
+                        """,
+                        parse_mode="HTML")
 
     def set_show_profile(self, bot, update):
         user_id = str(update.message.from_user.id)

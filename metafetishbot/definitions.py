@@ -19,7 +19,37 @@ class DefinitionManager(object):
 
     def help(self, bot, update):
         bot.sendMessage(update.message.chat_id,
-                        text="This is not helpful.")
+                        text="""
+<b>Definitions Module</b>
+
+The definitions module allows users to create definitions for words or phrases. This feature can used to reduce repeated questions about channel topics, or provide extra information in a persistent way.
+
+Entering a new definition is as easy as using the /defadd command, though in order to curtail abuse, users will need special administrator granted permissions to add or remove definitions. The word or phrase being defined should contain no whitespace, but can contain any characters, even unicode or emoji.
+
+Each word/phrase can have multiple definitions provided by multiple users.
+
+For instance, to add a definition, the command would be:
+
+/defadd DefiningDefinition This is a Definition
+
+If we then showed the definition, we'd get:
+
+Definitions for <i>DefiningDefinition</i>:
+<b>1.</b> This is a Definition
+
+To remove that definition:
+
+/defrm DefiningDefinition 1
+
+Note that definition names are case insensitive for search, but will display as entered.
+
+<b>Commands</b>
+
+/defhelp - Dispaly this help message.
+/def [word or phrase, no whitespace] - Show definition, if one exists
+/defadd [word or phrase, no whitespace] [definition] - Add or extend a definition
+/defrm [word or phrase, no whitespace] [index] - Remove a definition""",
+                        parse_mode="HTML")
 
     def show(self, bot, update):
         def_name = cgi.escape(update.message.text.partition(" ")[2].strip().lower())
