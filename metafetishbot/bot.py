@@ -1,4 +1,4 @@
-from telegram.ext import Updater
+from telegram.ext import Updater, CommandHandler
 from .permissioncommandhandler import PermissionCommandHandler
 from .definitions import DefinitionManager
 from .users import UserManager
@@ -47,10 +47,17 @@ class MetafetishTelegramBot(object):
         self.dispatcher.add_handler(PermissionCommandHandler('register',
                                                              [self.require_group],
                                                              self.users.register))
+        self.dispatcher.add_handler(PermissionCommandHandler('user_help',
+                                                             [self.require_group],
+                                                             self.users.help))
         self.dispatcher.add_handler(PermissionCommandHandler('def',
                                                              [self.require_group,
                                                               self.require_register],
                                                              self.definitions.show))
+        self.dispatcher.add_handler(PermissionCommandHandler('def_help',
+                                                             [self.require_group,
+                                                              self.require_register],
+                                                             self.definitions.help))
         self.dispatcher.add_handler(PermissionCommandHandler('def_show',
                                                              [self.require_group,
                                                               self.require_register],
@@ -68,24 +75,39 @@ class MetafetishTelegramBot(object):
 
     def handle_start(self, bot, update):
         user_id = update.message.from_user.id
-        start_text="Hi! I'm @metafetish_bot, the bot for the Metafetish Telegram Channel.\n\n"
+        start_text = ["Hi! I'm @metafetish_bot, the bot for the Metafetish Telegram Channel.", ""]
+        should_help = False
         if not self.group.user_in_group(bot, user_id):
-            start_text += "Before we get started, you'll need to join the metafetish channel. You can do so by going to http://telegram.me/metafetish.\n"
-            start_text += "After you've done that, send me the /register command so I can register you to use bot features.\n"
-            start_text += "Once you've joined and registered, message me with /start again and we can continue!"
-            bot.sendMessage(update.message.chat_id,
-                            start_text)
-            return
+            start_text += ["Before we get started, you'll need to join the metafetish channel. You can do so by going to http://telegram.me/metafetish.",
+                           "After you've done that, send me the /register command so I can register you to use bot features.",
+                           "Once you've joined and registered, message me with /start again and we can continue!"]
+        elif not self.users.is_valid_user(user_id):
+            start_text += ["Looks like you're in the group, great! Now, send me the /register command so I can register you to use bot features.",
+                           "Once you've joined and registered, message me with /start again and we can continue!"]
+        else:
+            start_text += ["It looks like you're in the channel and registered, so let's get started!", ""]
+            should_help = True
 
-        if not self.users.is_valid_user(user_id):
-            start_text += "Looks like you're in the group, great! Now, send me the /register command so I can register you to use bot features.\n"
-            start_text += "Once you've joined and registered, message me with /start again and we can continue!"
-            bot.sendMessage(update.message.chat_id,
-                            start_text)
-            return
+        bot.sendMessage(update.message.chat_id,
+                        "\n".join(start_text))
+        if should_help:
+            self.handle_help(bot, update)
 
     def handle_help(self, bot, update):
-        pass
+        user_id = update.message.from_user.id
+        if not self.group.user_in_group(bot, user_id) or not self.users.is_valid_user(user_id):
+            self.handle_start(bot, update)
+            return
+        help_text = ["I have the following modules available currently:",
+                     "",
+                     "<b>Definitions</b>",
+                     "Allows users to store and retrieve definitions for words, phrases, etc. Use /def_help for commands and options.",
+                     "",
+                     "<b>Users</b>",
+                     "Handles user registration and profiles. Use /user_help for command and options."]
+        bot.sendMessage(update.message.chat_id,
+                        "\n".join(help_text),
+                        parse_mode="HTML")
 
     def handle_settings(self, bot, update):
         pass
