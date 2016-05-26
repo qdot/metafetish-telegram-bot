@@ -4,14 +4,13 @@ from .base import MetafetishModuleBase
 class GroupManager(MetafetishModuleBase):
     def __init__(self, dbdir):
         super().__init__(dbdir, "groups", __name__, True)
-        if self.db.get("groups") is None:
-            self.db.dcreate("groups")
 
     def add_group(self, bot, update):
         group_name = update.message.text.partition(" ")[2].strip().lower()
         if group_name[0] is not "@":
             bot.sendMessage(update.message.chat_id,
                             text="Please specify group name with a leading @! (You used %s)" % (group_name))
+            return
         try:
             me = bot.getMe()
             chat_status = bot.getChatMember(group_name, me.id)
@@ -22,7 +21,8 @@ class GroupManager(MetafetishModuleBase):
         except:
             bot.sendMessage(update.message.chat_id,
                             text="Please make sure %s exists and that I'm an admin there!" % (group_name))
-        self.db.dadd("groups", (group_name, {}))
+            return
+        self.db.set(group_name, {})
         bot.sendMessage(update.message.chat_id,
                         text='Group %s added!' % (group_name))
 
@@ -31,6 +31,7 @@ class GroupManager(MetafetishModuleBase):
         if group_name[0] is not "@":
             bot.sendMessage(update.message.chat_id,
                             text="Please specify group name with a leading @! (You used %s)" % (group_name))
+            return
         try:
             me = bot.getMe()
             chat_status = bot.getChatMember(group_name, me.id)
@@ -40,7 +41,7 @@ class GroupManager(MetafetishModuleBase):
                 return
         except:
             pass
-        self.db.dpop("groups", group_name)
+        self.db.rem(group_name)
         bot.sendMessage(update.message.chat_id,
                         text='Group %s removed!' % (group_name))
 
@@ -49,10 +50,10 @@ class GroupManager(MetafetishModuleBase):
             user_id = str(user_id)
         try:
             for group in self.db.dkeys("groups"):
-                users = self.db.dget("groups", group)
+                users = self.db.get(group)
                 if user_id not in users.keys():
                     continue
-                user_status = self.db.dget("users", user_id)
+                user_status = users[user_id]
                 if user_status in ["creator", "administrator", "member"]:
                     return True
         except:
@@ -60,13 +61,13 @@ class GroupManager(MetafetishModuleBase):
         # Any time we don't find the member in either channel, update all
         # tracked channels
         is_in_group = False
-        for group in self.db.dkeys("groups"):
+        for group in self.db.getall():
             member = bot.getChatMember(group, user_id)
             if member is None:
                 continue
-            user_db = self.db.dget("groups", group)
+            user_db = self.db.get(group)
             user_db[user_id] = member.status
-            self.db.dadd("groups", (group, user_db))
+            self.db.set(group, user_db)
             if member.status in ["creator", "administrator", "member"]:
                 is_in_group = True
         return is_in_group
