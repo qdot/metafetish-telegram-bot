@@ -9,44 +9,60 @@ class GroupManager(object):
         if not os.path.isdir(groupsdir):
             os.makedirs(groupsdir)
         self.db = pickledb(os.path.join(groupsdir, "groups.db"), True)
+        if self.db.get("groups") is None:
+            self.db.dcreate("groups")
         self.logger = logging.getLogger(__name__)
-        self.group_name = self.db.get("group_name")
-        self.logger.warn("Now watching group %s" % (self.group_name))
-        if not self.db.get("users"):
-            self.db.dcreate("users")
 
-    def set_group(self, bot, update):
+    def add_group(self, bot, update):
         group_name = update.message.text.partition(" ")[2].strip().lower()
-        try:
-            bot.getChat(group_name)
-            self.group_name = group_name
-            self.db.set("group_name", group_name)
-            self.db.dump()
+        if group_name[0] is not "@":
             bot.sendMessage(update.message.chat_id,
-                            text='Group %s set!' % (group_name))
-
+                            text="Please specify group name with a leading @! (You used %s)" % (group_name))
+        try:
+            me = bot.getMe()
+            chat_status = bot.getChatMember(group_name, me.id)
+            if chat_status.status != "administrator":
+                bot.sendMessage(update.message.chat_id,
+                                text="Please make sure I'm an admin in %s!" % (group_name))
+                return
         except:
             bot.sendMessage(update.message.chat_id,
-                            text='Group %s not found!' % (group_name))
+                            text="Please make sure %s exists and that I'm an admin there!" % (group_name))
+        self.db.add("groups", (group_name, {}))
+        bot.sendMessage(update.message.chat_id,
+                        text='Group %s added!' % (group_name))
 
-    def user_in_group(self, bot, user_id):
-        self.logger.warn("Checking for user %d in group %s" % (user_id, self.group_name))
+    def user_in_groups(self, bot, user_id):
+        if type(user_id) is not str:
+            user_id = str(user_id)
         try:
-            user_status = self.db.dget("users", str(user_id))
-            if user_status in ["creator", "administrator", "member"]:
-                return True
+            for group in self.db.dkeys("groups"):
+                users = self.db.dget("groups", group)
+                if user_id not in users.keys():
+                    continue
+                user_status = self.db.dget("users", user_id)
+                if user_status in ["creator", "administrator", "member"]:
+                    return True
         except:
             pass
-        member = bot.getChatMember(self.group_name, user_id)
-        self.db.dadd("users", (str(user_id), member.status))
-        if member.status in ["creator", "administrator", "member"]:
-            return True
-        return False
+        # Any time we don't find the member in either channel, update all
+        # tracked channels
+        is_in_group = False
+        for group in self.db.dkeys("groups"):
+            member = bot.getChatMember(group, user_id)
+            if member is None:
+                continue
+            user_db = self.db.dget("groups", group)
+            user_db[user_id] = member.status
+            self.db.dadd("groups", (group, user_db))
+            if member.status in ["creator", "administrator", "member"]:
+                is_in_group = True
+        return is_in_group
 
-    def update_group_list(self, bot, user_id):
-        users = self.db.dkeys("users")
-        for u in users:
-            user_status = self.db.dget("users", u)
-            member = bot.getChatMember(self.group_name, u)
-            if user_status is not member.status:
-                self.db.dadd("users", u, member.status)
+    # def update_group_list(self, bot, user_id):
+    #     users = self.db.dkeys("users")
+    #     for u in users:
+    #         user_status = self.db.dget("users", u)
+    #         member = bot.getChatMember(self.group_name, u)
+    #         if user_status is not member.status:
+    #             self.db.dadd("users", u, member.status)

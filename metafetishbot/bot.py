@@ -6,9 +6,12 @@ from .groups import GroupManager
 import argparse
 import os
 import logging
+from functools import partial
 
 
 class MetafetishTelegramBot(object):
+    FLAGS = ["admin", "def_edit", "user_flags"]
+
     def __init__(self):
         parser = argparse.ArgumentParser()
         parser.add_argument("-d", "--dbdir", dest="dbdir",
@@ -41,43 +44,69 @@ class MetafetishTelegramBot(object):
         self.definitions = DefinitionManager(args.dbdir)
         self.group = GroupManager(args.dbdir)
 
+        # Default commands
         self.dispatcher.add_handler(CommandHandler('start', self.handle_start))
         self.dispatcher.add_handler(CommandHandler('help', self.handle_help))
         self.dispatcher.add_handler(CommandHandler('settings', self.handle_settings))
+
+        # User module commands
         self.dispatcher.add_handler(PermissionCommandHandler('register',
                                                              [self.require_group],
                                                              self.users.register))
-        self.dispatcher.add_handler(PermissionCommandHandler('user_help',
+        self.dispatcher.add_handler(PermissionCommandHandler('helpuser',
                                                              [self.require_group],
                                                              self.users.help))
+        self.dispatcher.add_handler(PermissionCommandHandler('addprofilefield',
+                                                             [self.require_group,
+                                                              self.require_register],
+                                                             self.users.add_field))
+        self.dispatcher.add_handler(PermissionCommandHandler('rmprofilefield',
+                                                             [self.require_group,
+                                                              self.require_register],
+                                                             self.users.remove_field))
+
+        # Definition module commands
         self.dispatcher.add_handler(PermissionCommandHandler('def',
                                                              [self.require_group,
                                                               self.require_register],
                                                              self.definitions.show))
-        self.dispatcher.add_handler(PermissionCommandHandler('def_help',
+        self.dispatcher.add_handler(PermissionCommandHandler('helpdef',
                                                              [self.require_group,
                                                               self.require_register],
                                                              self.definitions.help))
-        self.dispatcher.add_handler(PermissionCommandHandler('def_show',
+        self.dispatcher.add_handler(PermissionCommandHandler('showdef',
                                                              [self.require_group,
                                                               self.require_register],
                                                              self.definitions.show))
-        self.dispatcher.add_handler(PermissionCommandHandler('def_add',
+        self.dispatcher.add_handler(PermissionCommandHandler('adddef',
                                                              [self.require_group,
-                                                              self.require_register],
+                                                              self.require_register,
+                                                              partial(self.require_flag, flag="def_edit")],
                                                              self.definitions.add))
-        self.dispatcher.add_handler(PermissionCommandHandler('def_rm',
+        self.dispatcher.add_handler(PermissionCommandHandler('rmdef',
                                                              [self.require_group,
-                                                              self.require_register],
+                                                              self.require_register,
+                                                              partial(self.require_flag, flag="def_edit")],
                                                              self.definitions.rm))
 
+        # Admin commands
+        self.dispatcher.add_handler(PermissionCommandHandler('adduserflag',
+                                                             [self.require_group,
+                                                              self.require_register,
+                                                              partial(self.require_flag, flag="admin")],
+                                                             self.users.add_flag))
+        self.dispatcher.add_handler(PermissionCommandHandler('rmuserflag',
+                                                             [self.require_group,
+                                                              self.require_register,
+                                                              partial(self.require_flag, flag="admin")],
+                                                             self.users.remove_flag))
         self.dispatcher.add_error_handler(self.handle_error)
 
     def handle_start(self, bot, update):
         user_id = update.message.from_user.id
         start_text = ["Hi! I'm @metafetish_bot, the bot for the Metafetish Telegram Channel.", ""]
         should_help = False
-        if not self.group.user_in_group(bot, user_id):
+        if not self.group.user_in_groups(bot, user_id):
             start_text += ["Before we get started, you'll need to join the metafetish channel. You can do so by going to http://telegram.me/metafetish.",
                            "After you've done that, send me the /register command so I can register you to use bot features.",
                            "Once you've joined and registered, message me with /start again and we can continue!"]
@@ -95,7 +124,7 @@ class MetafetishTelegramBot(object):
 
     def handle_help(self, bot, update):
         user_id = update.message.from_user.id
-        if not self.group.user_in_group(bot, user_id) or not self.users.is_valid_user(user_id):
+        if not self.group.user_in_groups(bot, user_id) or not self.users.is_valid_user(user_id):
             self.handle_start(bot, update)
             return
         help_text = ["I have the following modules available currently:",
@@ -125,9 +154,19 @@ class MetafetishTelegramBot(object):
 
     def require_group(self, bot, update):
         user_id = update.message.from_user.id
-        if not self.group.user_in_group(bot, user_id):
+        if not self.group.user_in_groups(bot, user_id):
             bot.sendMessage(update.message.chat_id,
                             text="Please join the 'metafetish' group to use this bot! http://telegram.me/metafetish")
+            return False
+        return True
+
+    # When used with PermissionCommandHandler, Function requires currying with
+    # flag we want to check for.
+    def require_flag(self, bot, update, flag):
+        user_id = update.message.from_user.id
+        if not self.users.has_flag(user_id, flag):
+            bot.sendMessage(update.message.chat_id,
+                            text="You do not have the required permissions to run this command. Please check the help for the module the command comes from.")
             return False
         return True
 
