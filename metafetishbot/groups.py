@@ -32,13 +32,13 @@ class GroupManager(object):
     def user_in_group(self, bot, user_id):
         self.logger.warn("Checking for user %d in group %s" % (user_id, self.group_name))
         try:
-            user_status = self.db.dget("users", user_id)
+            user_status = self.db.dget("users", str(user_id))
             if user_status in ["creator", "administrator", "member"]:
                 return True
         except:
             pass
         member = bot.getChatMember(self.group_name, user_id)
-        self.db.dadd("users", (user_id, member.status))
+        self.db.dadd("users", (str(user_id), member.status))
         if member.status in ["creator", "administrator", "member"]:
             return True
         return False
