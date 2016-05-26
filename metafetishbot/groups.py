@@ -1,17 +1,11 @@
-from .pickledb import pickledb
-import os
-import logging
+from .base import MetafetishModuleBase
 
 
-class GroupManager(object):
+class GroupManager(MetafetishModuleBase):
     def __init__(self, dbdir):
-        groupsdir = os.path.join(dbdir, "groups")
-        if not os.path.isdir(groupsdir):
-            os.makedirs(groupsdir)
-        self.db = pickledb(os.path.join(groupsdir, "groups.db"), True)
+        super().__init__(dbdir, "groups", __name__, True)
         if self.db.get("groups") is None:
             self.db.dcreate("groups")
-        self.logger = logging.getLogger(__name__)
 
     def add_group(self, bot, update):
         group_name = update.message.text.partition(" ")[2].strip().lower()
@@ -77,8 +71,6 @@ class GroupManager(object):
                 is_in_group = True
         return is_in_group
 
-    def shutdown(self):
-        self.db.dump()
     # def update_group_list(self, bot, user_id):
     #     users = self.db.dkeys("users")
     #     for u in users:

@@ -44,6 +44,8 @@ class MetafetishTelegramBot(object):
         self.definitions = DefinitionManager(args.dbdir)
         self.groups = GroupManager(args.dbdir)
 
+        self.modules = [self.users, self.definitions, self.groups]
+
         # Default commands
         self.dispatcher.add_handler(CommandHandler('start', self.handle_start))
         self.dispatcher.add_handler(CommandHandler('help', self.handle_help))
@@ -74,12 +76,12 @@ class MetafetishTelegramBot(object):
                                                              [self.require_group,
                                                               self.require_register],
                                                              self.definitions.help))
-        self.dispatcher.add_handler(PermissionCommandHandler('adddef',
+        self.dispatcher.add_handler(PermissionCommandHandler('defadd',
                                                              [self.require_group,
                                                               self.require_register,
                                                               partial(self.require_flag, flag="def_edit")],
                                                              self.definitions.add))
-        self.dispatcher.add_handler(PermissionCommandHandler('rmdef',
+        self.dispatcher.add_handler(PermissionCommandHandler('defrm',
                                                              [self.require_group,
                                                               self.require_register,
                                                               partial(self.require_flag, flag="def_edit")],
@@ -102,7 +104,10 @@ class MetafetishTelegramBot(object):
                                                              [self.require_register,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.groups.rm_group))
-
+        self.dispatcher.add_handler(PermissionCommandHandler('outputcommands',
+                                                             [self.require_register,
+                                                              partial(self.require_flag, flag="admin")],
+                                                             self.output_commands))
         # On errors, just print to console and hope someone sees it
         self.dispatcher.add_error_handler(self.handle_error)
 
@@ -179,11 +184,17 @@ class MetafetishTelegramBot(object):
             return False
         return True
 
+    def output_commands(self, bot, update):
+        command_str = ""
+        for m in self.modules:
+            command_str += m.commands() + "\n"
+        bot.sendMessage(update.message.chat_id,
+                        text=command_str)
+
     def start_loop(self):
         self.updater.start_polling()
         self.updater.idle()
 
     def shutdown(self):
-        self.users.shutdown()
-        self.definitions.shutdown()
-        self.groups.shutdown()
+        for m in self.modules:
+            m.shutdown()

@@ -1,15 +1,11 @@
-import os
 from telegram.ext import CommandHandler
-from .pickledb import pickledb
+from .base import MetafetishModuleBase
 import cgi
 
 
-class DefinitionManager(object):
+class DefinitionManager(MetafetishModuleBase):
     def __init__(self, dbdir):
-        defsdir = os.path.join(dbdir, "definitions")
-        if not os.path.isdir(defsdir):
-            os.makedirs(defsdir)
-        self.db = pickledb(os.path.join(defsdir, "definitions.db"), True)
+        super().__init__(dbdir, "definitions", __name__, True)
 
     def register_with_dispatcher(self, dispatcher):
         dispatcher.add_handler(CommandHandler('def', self.show))
@@ -32,7 +28,11 @@ For instance, to add a definition, the command would be:
 
 /defadd DefiningDefinition This is a Definition
 
-If we then showed the definition, we'd get:
+If we then showed the definition using:
+
+/def DefiningDefinition
+
+We'd get:
 
 Definitions for <i>DefiningDefinition</i>:
 <b>1.</b> This is a Definition
@@ -45,11 +45,14 @@ Note that definition names are case insensitive for search, but will display as 
 
 <b>Commands</b>
 
-/defhelp - Dispaly this help message.
-/def [word or phrase, no whitespace] - Show definition, if one exists
-/defadd [word or phrase, no whitespace] [definition] - Add or extend a definition
-/defrm [word or phrase, no whitespace] [index] - Remove a definition""",
+%s""" % (self.commands()),
                         parse_mode="HTML")
+
+    def commands(self):
+        return """/defhelp - Display definitions help message.
+/def - Parameters: [word or phrase, no whitespace]. Show definition, if one exists.
+/defadd - Parameters: [word or phrase, no whitespace] [definition]. Add or extend a definition.
+/defrm - Parameters: [word or phrase, no whitespace] [index]. Remove a definition."""
 
     def show(self, bot, update):
         def_name = cgi.escape(update.message.text.partition(" ")[2].strip().lower())
@@ -114,6 +117,3 @@ Note that definition names are case insensitive for search, but will display as 
                         text='Index %s for definition <i>%s</i> deleted.' %
                         (def_rm, def_name),
                         parse_mode="HTML")
-
-    def shutdown(self):
-        self.db.dump()

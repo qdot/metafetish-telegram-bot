@@ -1,7 +1,5 @@
 from telegram.ext import CommandHandler
-from .pickledb import pickledb
-import logging
-import os
+from .base import MetafetishModuleBase
 
 
 class UserNotFoundException(Exception):
@@ -12,13 +10,9 @@ class UserFlagGroupNotFoundException(Exception):
     pass
 
 
-class UserManager(object):
+class UserManager(MetafetishModuleBase):
     def __init__(self, dbdir):
-        userdir = os.path.join(dbdir, "users")
-        if not os.path.isdir(userdir):
-            os.makedirs(userdir)
-        self.db = pickledb(os.path.join(userdir, "users.db"), True)
-        self.logger = logging.getLogger(__name__)
+        super().__init__(dbdir, "users", __name__, True)
         self.has_admin = True
         if not self.db.get("users"):
             self.db.dcreate("users")
@@ -83,15 +77,18 @@ Note that field names are case insensitive for search, but will display as enter
 
 <b>Commands</b>
 
-/userhelp - Display this help message
-/userregister - Register an account with the bot
+%s
+""" % (self.commands()),
+                        parse_mode="HTML")
+
+    def commands(self):
+        return """/userhelp - Display users help message.
+/userregister - Register an account with the bot.
 /useraddfield - Parameters: [field name] [field desc]. Add or update a profile field.
 /userrmfield - Parameters: [field name]. Remove a profile field.
 /usershowprofile - Turn profile sharing on.
 /userhideprofile - Turn profile sharing off.
-/userprofile - Parameters: [telegram user name or display name]. Show the profile of another user
-                        """,
-                        parse_mode="HTML")
+/userprofile - Parameters: [telegram user name or display name]. Show the profile of another user."""
 
     def set_show_profile(self, bot, update):
         user_id = str(update.message.from_user.id)
@@ -173,5 +170,3 @@ Note that field names are case insensitive for search, but will display as enter
     def remove_field(self, user_id, field):
         pass
 
-    def shutdown(self):
-        self.db.dump()
