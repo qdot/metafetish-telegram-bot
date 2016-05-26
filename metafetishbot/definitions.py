@@ -70,7 +70,8 @@ Note that definition names are case insensitive for search, but will display as 
             i += 1
         bot.sendMessage(update.message.chat_id,
                         text=def_str,
-                        parse_mode="HTML")
+                        parse_mode="HTML",
+                        disable_web_page_preview=True)
 
     def add(self, bot, update):
         command = update.message.text.partition(" ")[2]
@@ -81,13 +82,15 @@ Note that definition names are case insensitive for search, but will display as 
             bot.sendMessage(update.message.chat_id,
                             text='Adding definition:\n<i>%s</i>\n for term <i>%s</i>.' %
                             (def_add, def_name),
-                            parse_mode="HTML")
+                            parse_mode="HTML",
+                            disable_web_page_preview=True)
             self.db.lcreate(def_name)
         else:
             bot.sendMessage(update.message.chat_id,
                             text='Definition for <i>%s</i> already exists, extending with definition <i>%s</i>.' %
                             (def_name, def_add),
-                            parse_mode="HTML")
+                            parse_mode="HTML",
+                            disable_web_page_preview=True)
         d = {"user": update.message.from_user.id,
              "desc": def_add.strip()}
         self.db.ladd(def_name, d)
@@ -123,4 +126,5 @@ Note that definition names are case insensitive for search, but will display as 
         bot.sendMessage(update.message.chat_id,
                         text='Words/Phrases with definitions:\n%s' %
                         (def_list),
-                        parse_mode="HTML")
+                        parse_mode="HTML",
+                        disable_web_page_preview=True)
