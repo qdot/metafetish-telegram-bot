@@ -30,7 +30,7 @@ class MetafetishTelegramBot(object):
                 tg_token = f.readline()[0:-1]
         except:
             print("Cannot open token file!")
-            return 0
+            raise RuntimeError()
 
         if not args.dbdir or not os.path.isdir(args.dbdir):
             print("Valid database directory required!")
@@ -113,14 +113,12 @@ class MetafetishTelegramBot(object):
         self.dispatcher.add_handler(PermissionCommandHandler('defadd',
                                                              [self.require_group,
                                                               self.require_privmsg,
-                                                              self.require_register,
-                                                              partial(self.require_flag, flag="def_edit")],
+                                                              self.require_register],
                                                              self.definitions.add))
         self.dispatcher.add_handler(PermissionCommandHandler('defrm',
                                                              [self.require_group,
                                                               self.require_privmsg,
-                                                              self.require_register,
-                                                              partial(self.require_flag, flag="def_edit")],
+                                                              self.require_register],
                                                              self.definitions.rm))
 
         # Admin commands
