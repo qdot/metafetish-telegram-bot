@@ -1,9 +1,9 @@
-from .base import MetafetishModuleBase
+from .base import MetafetishPickleDBBase
 
 
-class GroupManager(MetafetishModuleBase):
+class GroupManager(MetafetishPickleDBBase):
     def __init__(self, dbdir):
-        super().__init__(dbdir, "groups", __name__, True)
+        super().__init__(__name__, dbdir, "groups", True)
 
     def add_group(self, bot, update):
         group_name = update.message.text.partition(" ")[2].strip().lower()

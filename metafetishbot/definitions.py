@@ -1,11 +1,11 @@
 from telegram.ext import CommandHandler
-from .base import MetafetishModuleBase
+from .base import MetafetishPickleDBBase
 import cgi
 
 
-class DefinitionManager(MetafetishModuleBase):
+class DefinitionManager(MetafetishPickleDBBase):
     def __init__(self, dbdir):
-        super().__init__(dbdir, "definitions", __name__, True)
+        super().__init__(__name__, dbdir, "definitions", True)
 
     def register_with_dispatcher(self, dispatcher):
         dispatcher.add_handler(CommandHandler('def', self.show))

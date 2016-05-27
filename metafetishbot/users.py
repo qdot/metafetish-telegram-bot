@@ -1,5 +1,5 @@
 from telegram.ext import CommandHandler
-from .base import MetafetishModuleBase
+from .base import MetafetishPickleDBBase
 import cgi
 
 
@@ -11,9 +11,9 @@ class UserFlagGroupNotFoundException(Exception):
     pass
 
 
-class UserManager(MetafetishModuleBase):
+class UserManager(MetafetishPickleDBBase):
     def __init__(self, dbdir):
-        super().__init__(dbdir, "users", __name__, True)
+        super().__init__(__name__, dbdir, "users", True)
         self.has_admin = True
         if self.get_num_users() == 0:
             self.has_admin = False
