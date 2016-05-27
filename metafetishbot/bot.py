@@ -122,6 +122,11 @@ class MetafetishTelegramBot(object):
                                                              self.definitions.rm))
 
         # Admin commands
+        self.dispatcher.add_handler(PermissionCommandHandler('userlist',
+                                                             [self.require_register,
+                                                              self.require_privmsg,
+                                                              partial(self.require_flag, flag="admin")],
+                                                             self.users.show_list))
         self.dispatcher.add_handler(PermissionCommandHandler('useraddflag',
                                                              [self.require_register,
                                                               self.require_privmsg,

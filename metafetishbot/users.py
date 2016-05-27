@@ -216,3 +216,12 @@ Note that field names are case insensitive for search, but will display as enter
         bot.sendMessage(update.message.chat_id,
                         text="Field %s has been removed from your profile." % (field_name))
 
+    def show_list(self, bot, update):
+        users = "User list:\n\n"
+        for k in self.db.getall():
+            user_info = self.db.get(k)
+            users += "- %s : %s : %s\n" % (user_info["username"],
+                                           user_info["displayname"],
+                                           k)
+        bot.sendMessage(update.message.chat_id,
+                        text=users)
