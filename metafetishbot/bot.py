@@ -1,4 +1,4 @@
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater
 from .permissioncommandhandler import PermissionCommandHandler
 from .definitions import DefinitionManager
 from .users import UserManager
@@ -48,24 +48,19 @@ class MetafetishTelegramBot(object):
 
         # Default commands
         self.dispatcher.add_handler(PermissionCommandHandler('start',
-                                                             [self.require_privmsg],
+                                                             [self.try_register,
+                                                              self.require_privmsg],
                                                              self.handle_start))
         self.dispatcher.add_handler(PermissionCommandHandler('help',
-                                                             [self.require_privmsg],
+                                                             [self.try_register,
+                                                              self.require_privmsg],
                                                              self.handle_help))
         self.dispatcher.add_handler(PermissionCommandHandler('settings',
-                                                             [self.require_privmsg],
+                                                             [self.try_register,
+                                                              self.require_privmsg],
                                                              self.handle_settings))
 
         # User module commands
-        self.dispatcher.add_handler(PermissionCommandHandler('register',
-                                                             [self.require_group,
-                                                              self.require_privmsg],
-                                                             self.users.register))
-        self.dispatcher.add_handler(PermissionCommandHandler('userregister',
-                                                             [self.require_group,
-                                                              self.require_privmsg],
-                                                             self.users.register))
         self.dispatcher.add_handler(PermissionCommandHandler('userhelp',
                                                              [self.require_group,
                                                               self.require_privmsg],
@@ -73,82 +68,82 @@ class MetafetishTelegramBot(object):
         self.dispatcher.add_handler(PermissionCommandHandler('usershowprofile',
                                                              [self.require_group,
                                                               self.require_privmsg,
-                                                              self.require_register],
+                                                              self.try_register],
                                                              partial(self.users.show_profile, show_profile=True)))
         self.dispatcher.add_handler(PermissionCommandHandler('userhideprofile',
                                                              [self.require_group,
                                                               self.require_privmsg,
-                                                              self.require_register],
+                                                              self.try_register],
                                                              partial(self.users.show_profile, show_profile=False)))
         self.dispatcher.add_handler(PermissionCommandHandler('useraddfield',
                                                              [self.require_group,
                                                               self.require_privmsg,
-                                                              self.require_register],
+                                                              self.try_register],
                                                              self.users.add_field))
         self.dispatcher.add_handler(PermissionCommandHandler('userrmfield',
                                                              [self.require_group,
                                                               self.require_privmsg,
-                                                              self.require_register],
+                                                              self.try_register],
                                                              self.users.remove_field))
         self.dispatcher.add_handler(PermissionCommandHandler('userprofile',
                                                              [self.require_group,
                                                               self.require_privmsg,
-                                                              self.require_register],
+                                                              self.try_register],
                                                              self.users.get_fields))
 
         # Definition module commands
         self.dispatcher.add_handler(PermissionCommandHandler('def',
                                                              [self.require_group,
-                                                              self.require_register],
+                                                              self.try_register],
                                                              self.definitions.show))
         self.dispatcher.add_handler(PermissionCommandHandler('deflist',
                                                              [self.require_group,
-                                                              self.require_register],
+                                                              self.try_register],
                                                              self.definitions.list))
         self.dispatcher.add_handler(PermissionCommandHandler('defhelp',
                                                              [self.require_group,
                                                               self.require_privmsg,
-                                                              self.require_register],
+                                                              self.try_register],
                                                              self.definitions.help))
         self.dispatcher.add_handler(PermissionCommandHandler('defadd',
                                                              [self.require_group,
                                                               self.require_privmsg,
-                                                              self.require_register],
+                                                              self.try_register],
                                                              self.definitions.add))
         self.dispatcher.add_handler(PermissionCommandHandler('defrm',
                                                              [self.require_group,
                                                               self.require_privmsg,
-                                                              self.require_register],
+                                                              self.try_register],
                                                              self.definitions.rm))
 
         # Admin commands
         self.dispatcher.add_handler(PermissionCommandHandler('userlist',
-                                                             [self.require_register,
+                                                             [self.try_register,
                                                               self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.users.show_list))
         self.dispatcher.add_handler(PermissionCommandHandler('useraddflag',
-                                                             [self.require_register,
+                                                             [self.try_register,
                                                               self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.users.add_flag))
         self.dispatcher.add_handler(PermissionCommandHandler('userrmflag',
-                                                             [self.require_register,
+                                                             [self.try_register,
                                                               self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.users.remove_flag))
         self.dispatcher.add_handler(PermissionCommandHandler('groupadd',
-                                                             [self.require_register,
+                                                             [self.try_register,
                                                               self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.groups.add_group))
         self.dispatcher.add_handler(PermissionCommandHandler('grouprm',
-                                                             [self.require_register,
+                                                             [self.try_register,
                                                               self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.groups.rm_group))
         self.dispatcher.add_handler(PermissionCommandHandler('outputcommands',
-                                                             [self.require_register,
+                                                             [self.try_register,
                                                               self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.output_commands))
@@ -157,17 +152,15 @@ class MetafetishTelegramBot(object):
 
     def handle_start(self, bot, update):
         user_id = update.message.from_user.id
-        start_text = ["Hi! I'm @metafetish_bot, the bot for the Metafetish Telegram Channel.", ""]
+        start_text = ["Hi! I'm @metafetish_bot, the bot for the Metafetish Telegram Group Network.", ""]
         should_help = False
-        if not self.groups.user_in_groups(bot, user_id):
-            start_text += ["Before we get started, you'll need to join the metafetish channel. You can do so by going to http://telegram.me/metafetish.",
-                           "After you've done that, send me the /register command so I can register you to use bot features.",
-                           "Once you've joined and registered, message me with /start again and we can continue!"]
-        elif not self.users.is_valid_user(user_id):
-            start_text += ["Looks like you're in the group, great! Now, send me the /register command so I can register you to use bot features.",
-                           "Once you've joined and registered, message me with /start again and we can continue!"]
+        if len(self.groups.get_groups()) > 0 and not self.groups.user_in_groups(bot, user_id):
+            start_text += ["Before we get started, you'll need to join one of the following groups:"]
+            for g in self.groups.get_groups():
+                start_text += ["- %s" % (g)]
+            start_text += ["Once you've joined, message me with /start again and we can continue!"]
         else:
-            start_text += ["It looks like you're in the channel and registered, so let's get started!", ""]
+            start_text += ["It looks like you're in one of my groups, so let's get started!", ""]
             should_help = True
 
         bot.sendMessage(update.message.chat_id,
@@ -177,16 +170,16 @@ class MetafetishTelegramBot(object):
 
     def handle_help(self, bot, update):
         user_id = update.message.from_user.id
-        if not self.groups.user_in_groups(bot, user_id) or not self.users.is_valid_user(user_id):
+        if (len(self.groups.get_groups()) > 0 and not self.groups.user_in_groups(bot, user_id)) or not self.users.is_valid_user(user_id):
             self.handle_start(bot, update)
             return
         help_text = ["I have the following modules available currently:",
                      "",
                      "<b>Definitions</b>",
-                     "Allows users to store and retrieve definitions for words, phrases, etc. Use /def_help for commands and options.",
+                     "Allows users to store and retrieve definitions for words, phrases, etc. Use /defhelp for commands and options.",
                      "",
                      "<b>Users</b>",
-                     "Handles user registration and profiles. Use /user_help for command and options."]
+                     "Handles user profiles. Use /userhelp for command and options."]
         bot.sendMessage(update.message.chat_id,
                         "\n".join(help_text),
                         parse_mode="HTML")
@@ -197,12 +190,13 @@ class MetafetishTelegramBot(object):
     def handle_error(self, bot, update, error):
         self.logger.warn("Exception thrown! %s", self.error)
 
-    def require_register(self, bot, update):
+    def try_register(self, bot, update):
         user_id = update.message.from_user.id
         if not self.users.is_valid_user(user_id):
-            bot.sendMessage(update.message.chat_id,
-                            text="Please register with the bot (using the /register command) before using this command!")
-            return False
+            self.users.register(bot, update)
+        # Always returns true, as running any command will mean the user is
+        # registered. We just want to make sure they're in the DB so flags can
+        # be added if needed.
         return True
 
     def require_group(self, bot, update):
@@ -210,6 +204,8 @@ class MetafetishTelegramBot(object):
         # user register so they can be an admin. After that, always require
         # membership
         if self.users.get_num_users() == 0:
+            return True
+        if len(self.groups.get_groups()) == 0:
             return True
         user_id = update.message.from_user.id
         if not self.groups.user_in_groups(bot, user_id):

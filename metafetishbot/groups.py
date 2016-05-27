@@ -72,6 +72,8 @@ class GroupManager(MetafetishModuleBase):
                 is_in_group = True
         return is_in_group
 
+    def get_groups(self):
+        return self.db.getall()
     # def update_group_list(self, bot, user_id):
     #     users = self.db.dkeys("users")
     #     for u in users:

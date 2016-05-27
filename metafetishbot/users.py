@@ -36,8 +36,6 @@ class UserManager(MetafetishModuleBase):
     def register(self, bot, update):
         user_id = str(update.message.from_user.id)
         if self.is_valid_user(user_id):
-            bot.sendMessage(update.message.chat_id,
-                            text="You're already registered!")
             return
         # Use the user_id as the dictionary key. Unfortunately the id is an
         # int so this requires casting to make sure comparisons work.
@@ -53,17 +51,15 @@ class UserManager(MetafetishModuleBase):
                             parse_mode="HTML")
         self.has_admin = True
         self.db.set(str(user_id), user_db)
-        bot.sendMessage(update.message.chat_id,
-                        text="You are now registered!")
 
     def help(self, bot, update):
         bot.sendMessage(update.message.chat_id,
                         text="""
 <b>User Module</b>
 
-The user module allows telegram users to register with the bot to use different functionality. Bot administrators can delegate privileges to registered users for different bot capabilities.
+The user module allows users to create profiles for themselves.
 
-Each registered user can also have profiles, which consists of a field name (with no whitespace) and description of that field. This allows users to share whatever information they might want about themselves. Profiles sharing is offby default, and can be turned on and off as needed.
+Each user can also have profiles, which consists of a field name (with no whitespace) and description of that field. This allows users to share whatever information they might want about themselves. Profiles sharing is offby default, and can be turned on and off as needed.
 
 For instance, to add a twitter account to your profile, the command would be:
 
@@ -83,7 +79,6 @@ Note that field names are case insensitive for search, but will display as enter
 
     def commands(self):
         return """/userhelp - Display users help message.
-/userregister - Register an account with the bot.
 /useraddfield - Parameters: [field name] [field desc]. Add or update a profile field.
 /userrmfield - Parameters: [field name]. Remove a profile field.
 /usershowprofile - Turn profile sharing on.
