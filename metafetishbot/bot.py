@@ -1,8 +1,9 @@
-from telegram.ext import Updater
+from telegram.ext import Updater, MessageHandler, Filters, CommandHandler
 from .permissioncommandhandler import PermissionCommandHandler
 from .definitions import DefinitionManager
 from .users import UserManager
 from .groups import GroupManager
+from .conversations import ConversationManager
 import argparse
 import os
 import logging
@@ -40,11 +41,15 @@ class MetafetishTelegramBot(object):
         self.logger = logging.getLogger(__name__)
         self.updater = Updater(token=tg_token)
         self.dispatcher = self.updater.dispatcher
+        self.conversations = ConversationManager()
         self.users = UserManager(args.dbdir)
-        self.definitions = DefinitionManager(args.dbdir)
+        self.definitions = DefinitionManager(args.dbdir, self.conversations)
         self.groups = GroupManager(args.dbdir)
 
         self.modules = [self.users, self.definitions, self.groups]
+
+        self.dispatcher.add_handler(MessageHandler([Filters.text],
+                                                   self.handle_message))
 
         # Default commands
         self.dispatcher.add_handler(PermissionCommandHandler('start',
@@ -59,6 +64,8 @@ class MetafetishTelegramBot(object):
                                                              [self.try_register,
                                                               self.require_privmsg],
                                                              self.handle_settings))
+        self.dispatcher.add_handler(CommandHandler('cancel',
+                                                   self.handle_cancel))
 
         # User module commands
         self.dispatcher.add_handler(PermissionCommandHandler('userhelp',
@@ -147,6 +154,7 @@ class MetafetishTelegramBot(object):
                                                               self.require_privmsg,
                                                               partial(self.require_flag, flag="admin")],
                                                              self.output_commands))
+
         # On errors, just print to console and hope someone sees it
         self.dispatcher.add_error_handler(self.handle_error)
 
@@ -163,7 +171,7 @@ class MetafetishTelegramBot(object):
             start_text += ["It looks like you're in one of my groups, so let's get started!", ""]
             should_help = True
 
-        bot.sendMessage(update.message.chat_id,
+        bot.sendMessage(update.message.chat.id,
                         "\n".join(start_text))
         if should_help:
             self.handle_help(bot, update)
@@ -176,11 +184,15 @@ class MetafetishTelegramBot(object):
         help_text = ["I have the following modules available currently:",
                      "",
                      "<b>Definitions</b>",
-                     "Allows users to store and retrieve definitions for words, phrases, etc. Use /defhelp for commands and options.",
+                     "Allows users to store and retrieve definitions for words, phrases, etc.",
+                     "",
+                     self.definitions.commands(),
                      "",
                      "<b>Users</b>",
-                     "Handles user profiles. Use /userhelp for command and options."]
-        bot.sendMessage(update.message.chat_id,
+                     "Handles user profiles. Use /userhelp for command and options.",
+                     "",
+                     self.users.commands()]
+        bot.sendMessage(update.message.chat.id,
                         "\n".join(help_text),
                         parse_mode="HTML")
 
@@ -209,7 +221,7 @@ class MetafetishTelegramBot(object):
             return True
         user_id = update.message.from_user.id
         if not self.groups.user_in_groups(bot, user_id):
-            bot.sendMessage(update.message.chat_id,
+            bot.sendMessage(update.message.chat.id,
                             text="Please join the 'metafetish' group to use this bot! http://telegram.me/metafetish")
             return False
         return True
@@ -219,14 +231,15 @@ class MetafetishTelegramBot(object):
     def require_flag(self, bot, update, flag):
         user_id = update.message.from_user.id
         if not self.users.has_flag(user_id, flag):
-            bot.sendMessage(update.message.chat_id,
-                            text="You do not have the required permissions to run this command. Please check the help for the module the command comes from.")
+            bot.sendMessage(update.message.chat.id,
+                            text="You do not have the required permissions to run this command.")
             return False
         return True
 
     def require_privmsg(self, bot, update):
-        if update.message.chat_id < 0:
-            bot.sendMessage(update.message.chat_id,
+        if update.message.chat.id < 0:
+            bot.sendMessage(update.message.chat.id,
+                            reply_to_message_id=update.message.id,
                             text="Please message that command to me. Only the following commands are allowed in public chats:\n- /def")
             return False
         return True
@@ -235,8 +248,27 @@ class MetafetishTelegramBot(object):
         command_str = ""
         for m in self.modules:
             command_str += m.commands() + "\n"
-        bot.sendMessage(update.message.chat_id,
+        bot.sendMessage(update.message.chat.id,
                         text=command_str)
+
+    def handle_message(self, bot, update):
+        # Ignore messages from groups
+        if update.message.chat.id < 0:
+            return
+        if self.conversations.check_conversation(bot, update):
+            return
+        self.handle_help(bot, update)
+
+    def handle_cancel(self, bot, update):
+        if update.message.chat.id < 0:
+            return
+        if not self.conversations.cancel_conversation(bot, update):
+            bot.sendMessage(update.message.chat.id,
+                            text="Don't have anything to cancel!")
+            self.handle_help(bot, update)
+            return
+        bot.sendMessage(update.message.chat.id,
+                        text="Command canceled!")
 
     def start_loop(self):
         self.updater.start_polling()
