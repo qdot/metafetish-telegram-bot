@@ -181,16 +181,11 @@ class MetafetishTelegramBot(object):
         if (len(self.groups.get_groups()) > 0 and not self.groups.user_in_groups(bot, user_id)) or not self.users.is_valid_user(user_id):
             self.handle_start(bot, update)
             return
-        help_text = ["I have the following modules available currently:",
+        help_text = ["Hi! I'm @metafetish_bot, the bot for the Metafetish Telegram Group Network.",
                      "",
-                     "<b>Definitions</b>",
-                     "Allows users to store and retrieve definitions for words, phrases, etc.",
+                     "Here's a list of commands I support:",
                      "",
                      self.definitions.commands(),
-                     "",
-                     "<b>Users</b>",
-                     "Handles user profiles. Use /userhelp for command and options.",
-                     "",
                      self.users.commands()]
         bot.sendMessage(update.message.chat.id,
                         "\n".join(help_text),
