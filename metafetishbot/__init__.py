@@ -1,3 +1,3 @@
-from .bot import MetafetishTelegramBot, MetafetishTelegramBotCLI
+from .bot import MetafetishTelegramBotCLI, MetafetishTelegramBotThread
 
-__all__ = ["MetafetishTelegramBot", "MetafetishTelegramBotCLI"]
+__all__ = ["MetafetishTelegramBotCLI", "MetafetishTelegramBotThread"]

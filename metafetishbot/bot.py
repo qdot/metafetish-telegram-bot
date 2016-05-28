@@ -4,6 +4,8 @@ from .definitions import DefinitionManager
 from .users import UserManager
 from .groups import GroupManager
 from .conversations import ConversationManager
+from queue import Queue
+from threading import Thread
 import argparse
 import os
 import logging
@@ -279,5 +281,23 @@ class MetafetishTelegramBotCLI(MetafetishTelegramBot):
             print("Valid database directory required!")
             parser.print_help()
             raise RuntimeError()
-
         super().__init__(args.dbdir, tg_token)
+
+
+class MetafetishTelegramBotThread(MetafetishTelegramBot):
+    def __init__(self, dbdir, tg_token):
+        super().__init__(dbdir, tg_token)
+        # Steal the queue from the updater.
+        self.update_queue = self.updater.update_queue
+
+        # Start the thread
+        self.thread = Thread(target=self.dispatcher.start, name='dispatcher')
+        self.thread.start()
+
+    def add_update(self, update):
+        self.update_queue.put(update)
+
+    def shutdown(self):
+        self.thread.join(1)
+        super().shutdown()
+
