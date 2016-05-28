@@ -21,7 +21,7 @@ class MetafetishTelegramBot(object):
         self.updater = Updater(token=tg_token)
         self.dispatcher = self.updater.dispatcher
         self.conversations = ConversationManager()
-        self.users = UserManager(dbdir)
+        self.users = UserManager(dbdir, self.conversations)
         self.definitions = DefinitionManager(dbdir, self.conversations)
         self.groups = GroupManager(dbdir)
 
