@@ -229,8 +229,9 @@ class MetafetishTelegramBot(object):
         # Ignore messages from groups
         if update.message.chat.id < 0:
             return
-        if self.conversations.check_conversation(bot, update):
+        if self.conversations.check(bot, update):
             return
+        self.try_register(bot, update)
         self.handle_help(bot, update)
 
     def handle_cancel(self, bot, update):
