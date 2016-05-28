@@ -13,38 +13,17 @@ from functools import partial
 class MetafetishTelegramBot(object):
     FLAGS = ["admin", "def_edit", "user_flags"]
 
-    def __init__(self):
-        parser = argparse.ArgumentParser()
-        parser.add_argument("-d", "--dbdir", dest="dbdir",
-                            help="Directory for pickledb storage")
-        parser.add_argument("-t", "--token", dest="token_file",
-                            help="File containing telegram API token")
-        args = parser.parse_args()
-
-        if not args.token_file:
-            print("Token file argument required!")
-            parser.print_help()
-            raise RuntimeError()
-
-        try:
-            with open(args.token_file, "r") as f:
-                tg_token = f.readline()[0:-1]
-        except:
-            print("Cannot open token file!")
-            raise RuntimeError()
-
-        if not args.dbdir or not os.path.isdir(args.dbdir):
+    def __init__(self, dbdir, tg_token):
+        if not dbdir or not os.path.isdir(dbdir):
             print("Valid database directory required!")
-            parser.print_help()
             raise RuntimeError()
-
         self.logger = logging.getLogger(__name__)
         self.updater = Updater(token=tg_token)
         self.dispatcher = self.updater.dispatcher
         self.conversations = ConversationManager()
-        self.users = UserManager(args.dbdir)
-        self.definitions = DefinitionManager(args.dbdir, self.conversations)
-        self.groups = GroupManager(args.dbdir)
+        self.users = UserManager(dbdir)
+        self.definitions = DefinitionManager(dbdir, self.conversations)
+        self.groups = GroupManager(dbdir)
 
         self.modules = [self.users, self.definitions, self.groups]
 
@@ -272,3 +251,32 @@ class MetafetishTelegramBot(object):
     def shutdown(self):
         for m in self.modules:
             m.shutdown()
+
+
+class MetafetishTelegramBotCLI(MetafetishTelegramBot):
+    def __init__(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument("-d", "--dbdir", dest="dbdir",
+                            help="Directory for pickledb storage")
+        parser.add_argument("-t", "--token", dest="token_file",
+                            help="File containing telegram API token")
+        args = parser.parse_args()
+
+        if not args.token_file:
+            print("Token file argument required!")
+            parser.print_help()
+            raise RuntimeError()
+
+        try:
+            with open(args.token_file, "r") as f:
+                tg_token = f.readline().strip()
+        except:
+            print("Cannot open token file!")
+            raise RuntimeError()
+
+        if not args.dbdir or not os.path.isdir(args.dbdir):
+            print("Valid database directory required!")
+            parser.print_help()
+            raise RuntimeError()
+
+        super().__init__(args.dbdir, tg_token)
