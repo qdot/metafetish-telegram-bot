@@ -105,9 +105,7 @@ Each word/phrase can have multiple definitions provided by multiple users.
                                 text=update_msg)
                 continue
         self._remove_definition(user_id, def_name, index - 1)
-        update_msg = "Great! The term <i>%s</i> is now defined as:\n\n" % (def_name)
-        update_msg += self.get_definition_list(def_name)
-        update_msg += "\nAll done! /help"
+        update_msg = "Great! Index %d has been removed from term <i>%s</i>." % (index, def_name)
         bot.sendMessage(update.message.chat.id,
                         text=update_msg,
                         parse_mode="HTML")
