@@ -46,28 +46,20 @@ class UserManager(MetafetishPickleDBBase):
                    "displayname": "%s %s" % (update.message.from_user.first_name,
                                              update.message.from_user.last_name)}
         if not self.has_admin:
-            bot.sendMessage(update.message.chat_id,
+            bot.sendMessage(update.message.chat.id,
                             text="You're the first user, therefore you're the <b>admin</b>.",
                             parse_mode="HTML")
         self.has_admin = True
         self.db.set(str(user_id), user_db)
 
     def help(self, bot, update):
-        bot.sendMessage(update.message.chat_id,
+        bot.sendMessage(update.message.chat.id,
                         text="""
 <b>User Module</b>
 
 The user module allows users to create profiles for themselves.
 
 Each user can also have profiles, which consists of a field name (with no whitespace) and description of that field. This allows users to share whatever information they might want about themselves. Profiles sharing is offby default, and can be turned on and off as needed.
-
-For instance, to add a twitter account to your profile, the command would be:
-
-/useraddfield TwitterAccount http://www.twitter.com/metafetish
-
-To remove that field:
-
-/userrmfield TwitterAccount
 
 Note that field names are case insensitive for search, but will display as entered.
 
@@ -79,16 +71,16 @@ Note that field names are case insensitive for search, but will display as enter
 
     def commands(self):
         return """/userhelp - Display users help message.
-/useraddfield - Parameters: [field name] [field desc]. Add or update a profile field.
-/userrmfield - Parameters: [field name]. Remove a profile field.
+/useraddfield - Add or update a profile field.
+/userrmfield - Remove a profile field.
 /usershowprofile - Turn profile sharing on.
 /userhideprofile - Turn profile sharing off.
-/userprofile - Parameters: [telegram user name or display name]. Show the profile of another user."""
+/userprofile - Show the profile of another user."""
 
     def show_profile(self, bot, update, show_profile):
         user_id = str(update.message.from_user.id)
         self.db.dadd(user_id, ("show_profile", show_profile))
-        bot.sendMessage(update.message.chat_id,
+        bot.sendMessage(update.message.chat.id,
                         text="Profile display is now turned <b>%s</b>." % ("ON" if show_profile else "OFF"),
                         parse_mode="HTML")
 
@@ -107,45 +99,53 @@ Note that field names are case insensitive for search, but will display as enter
         return (user_id, user)
 
     def add_flag(self, bot, update):
-        try:
-            (user_command, user_name_or_id, user_flag) = update.message.text.split()
-        except:
-            bot.sendMessage(update.message.chat_id,
-                            text="Incorrect syntax for add flag command. Please try again.")
-            return
-        (user_id, user) = self.get_user_by_name_or_id(user_name_or_id)
-        if not user_id:
-            bot.sendMessage(update.message.chat_id,
-                            text="Can't find user to add tags to!")
-            return
+        bot.sendMessage(update.message.chat.id,
+                        text="What is the name or id of the user who you'd like to add a flag to?")
+        while True:
+            (bot, update) = yield
+            user_name_or_id = update.message.text
+            (user_id, user) = self.get_user_by_name_or_id(user_name_or_id)
+            if user_id:
+                break
+            bot.sendMessage(update.message.chat.id,
+                            text="I can't find that user in my database, please try again or /cancel.")
+
+        bot.sendMessage(update.message.chat.id,
+                        text="What is the name of the flag you would like to set for %s?" % (user.username))
+        (bot, update) = yield
+        user_flag = update.message.chat.id
         if user_flag not in user["flags"]:
             user["flags"].append(user_flag)
             self.db.set(user_id, user)
-            bot.sendMessage(update.message.chat_id,
+            bot.sendMessage(update.message.chat.id,
                             text="Added flag %s to %s" % (user_flag, user_name_or_id))
         else:
-            bot.sendMessage(update.message.chat_id,
+            bot.sendMessage(update.message.chat.id,
                             text="User %s already has flag %s" % (user_name_or_id, user_flag))
 
     def remove_flag(self, bot, update):
-        try:
-            (user_command, user_name_or_id, user_flag) = update.message.text.split()
-        except:
-            bot.sendMessage(update.message.chat_id,
-                            text="Incorrect syntax for add flag command. Please try again.")
-            return
-        (user_id, user) = self.get_user_by_name_or_id(user_name_or_id)
-        if not user_id:
-            bot.sendMessage(update.message.chat_id,
-                            text="Can't find user to add tags to!")
-            return
+        bot.sendMessage(update.message.chat.id,
+                        text="What is the name or id of the user who you'd like to add a flag to?")
+        while True:
+            (bot, update) = yield
+            user_name_or_id = update.message.text
+            (user_id, user) = self.get_user_by_name_or_id(user_name_or_id)
+            if user_id:
+                break
+            bot.sendMessage(update.message.chat.id,
+                            text="I can't find that user in my database, please try again or /cancel.")
+
+        bot.sendMessage(update.message.chat.id,
+                        text="What is the name of the flag you would like to remove for %s?" % (user.username))
+        (bot, update) = yield
+        user_flag = update.message.chat.id
         if user_flag in user["flags"]:
             user["flags"].remove(user_flag)
             self.db.set(user_id, user)
-            bot.sendMessage(update.message.chat_id,
-                            text="Remove flag %s from %s" % (user_flag, user_name_or_id))
+            bot.sendMessage(update.message.chat.id,
+                            text="Removed flag %s from %s" % (user_flag, user_name_or_id))
         else:
-            bot.sendMessage(update.message.chat_id,
+            bot.sendMessage(update.message.chat.id,
                             text="User %s does not have flag %s" % (user_name_or_id, user_flag))
 
     def has_flag(self, user_id, flag):
@@ -167,13 +167,13 @@ Note that field names are case insensitive for search, but will display as enter
         self.logger.warn("NAME %s" % prof_name)
         (user_id, user) = self.get_user_by_name_or_id(prof_name)
         if not user_id or not user["show_profile"]:
-            bot.sendMessage(update.message.chat_id,
+            bot.sendMessage(update.message.chat.id,
                             text="User not found, or does not have a public profile")
             return
         fields = "<b>User Profile for %s</b>\n\n" % (prof_name)
         for (k, v) in user["fields"].items():
             fields += "<b>%s</b>\n\n%s\n\n" % (k, v)
-        bot.sendMessage(update.message.chat_id,
+        bot.sendMessage(update.message.chat.id,
                         text=fields,
                         parse_mode="HTML",
                         disable_web_page_preview=True)
@@ -183,13 +183,13 @@ Note that field names are case insensitive for search, but will display as enter
         try:
             (field_command, field_name, field_value) = update.message.text.split()
         except:
-            bot.sendMessage(update.message.chat_id,
+            bot.sendMessage(update.message.chat.id,
                             text="Incorrect syntax for add field command. Please try again.")
             return
         user = self.db.get(user_id)
         user["fields"][cgi.escape(field_name)] = cgi.escape(field_value)
         self.db.set(user_id, user)
-        bot.sendMessage(update.message.chat_id,
+        bot.sendMessage(update.message.chat.id,
                         text="Field %s is now set/updated in your profile." % (field_name))
 
     def remove_field(self, bot, update):
@@ -197,18 +197,18 @@ Note that field names are case insensitive for search, but will display as enter
         try:
             (field_command, field_name) = update.message.text.split()
         except:
-            bot.sendMessage(update.message.chat_id,
+            bot.sendMessage(update.message.chat.id,
                             text="Incorrect syntax for remove field command. Please try again.")
             return
         user = self.db.get(user_id)
         try:
             del user["fields"][cgi.escape(field_name)]
         except KeyError:
-            bot.sendMessage(update.message.chat_id,
+            bot.sendMessage(update.message.chat.id,
                             text="Can't find field %s in your profile." % (field_name))
             return
         self.db.set(user_id, user)
-        bot.sendMessage(update.message.chat_id,
+        bot.sendMessage(update.message.chat.id,
                         text="Field %s has been removed from your profile." % (field_name))
 
     def show_list(self, bot, update):
@@ -218,5 +218,5 @@ Note that field names are case insensitive for search, but will display as enter
             users += "- %s : %s : %s\n" % (user_info["username"],
                                            user_info["displayname"],
                                            k)
-        bot.sendMessage(update.message.chat_id,
+        bot.sendMessage(update.message.chat.id,
                         text=users)
