@@ -135,12 +135,12 @@ Each word/phrase can have multiple definitions provided by multiple users.
     def add(self, bot, update):
         c = self.add_definition_conversation(bot, update)
         c.send(None)
-        self.cm.add_conversation(update, c)
+        self.cm.add(update, c)
 
     def rm(self, bot, update):
         c = self.remove_definition_conversation(bot, update)
         c.send(None)
-        self.cm.add_conversation(update, c)
+        self.cm.add(update, c)
 
     def list(self, bot, update):
         def_list = ", ".join([x for x in self.db.getall()])

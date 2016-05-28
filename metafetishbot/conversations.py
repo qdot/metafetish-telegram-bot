@@ -10,10 +10,10 @@ class ConversationManager(MetafetishModuleBase):
         # Value will get a generator object.
         self.conversations = {}
 
-    def add_conversation(self, update, conversation):
+    def add(self, update, conversation):
         self.conversations[update.message.chat.id] = conversation
 
-    def check_conversation(self, bot, update):
+    def check(self, bot, update):
         chat_id = update.message.chat.id
         if chat_id not in self.conversations.keys():
             return False
@@ -22,10 +22,10 @@ class ConversationManager(MetafetishModuleBase):
             # update in a tuple
             self.conversations[chat_id].send((bot, update))
         except StopIteration:
-            self.cancel_conversation(self, bot, update)
+            self.cancel(bot, update)
         return True
 
-    def cancel_conversation(self, bot, update):
+    def cancel(self, bot, update):
         chat_id = update.message.chat.id
         if chat_id not in self.conversations.keys():
             return False
