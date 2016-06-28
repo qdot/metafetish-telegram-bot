@@ -4,7 +4,7 @@ from .definitions import DefinitionManager
 from .users import UserManager
 from .groups import GroupManager
 from .conversations import ConversationManager
-from queue import Queue
+from .db import RedisWrapper
 from threading import Thread
 import argparse
 import os
@@ -15,10 +15,7 @@ from functools import partial
 class MetafetishTelegramBot(object):
     FLAGS = ["admin", "def_edit", "user_flags"]
 
-    def __init__(self, dbdir, tg_token):
-        if not dbdir or not os.path.isdir(dbdir):
-            print("Valid database directory required!")
-            raise RuntimeError()
+    def __init__(self, redis_host, redis_port, redis_pass, tg_token):
         self.logger = logging.getLogger(__name__)
         self.updater = Updater(token=tg_token)
         self.dispatcher = self.updater.dispatcher

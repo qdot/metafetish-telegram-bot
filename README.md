@@ -2,4 +2,4 @@
 
 Code for the bot on the [Metafetish Telegram Channel](http://telegram.me/metafetish). 
 
-Based on [python-telegram-bot](http://github.com/python-telegram-bot/python-telegram-bot)
+Based on [python-telegram-bot](http://github.com/python-telegram-bot/python-telegram-bot) and [np-telegram-bot](http://github.com/qdot/np-telegram-bot)
